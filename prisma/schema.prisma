@@ -1,0 +1,217 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String           @id @default(cuid())
+  email        String           @unique
+  passwordHash String
+  name         String
+  role         String           @default("CUSTOMER") // ADMIN, STAFF, CUSTOMER
+  isActive     Boolean          @default(true)
+  createdById  String?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  customer     CustomerProfile?
+  tokens       PasswordResetToken[]
+  auditLogs    AuditLog[]
+}
+
+model CustomerProfile {
+  id            String         @id @default(cuid())
+  userId        String?        @unique
+  displayName   String
+  email         String?        @unique
+  phone         String?
+  company       String?
+  address       String?
+  taxId         String?
+  notes         String?
+  isActive      Boolean        @default(true)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  user          User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+  subscriptions Subscription[]
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  action    String
+  entity    String
+  entityId  String
+  meta      String   @default("{}") // JSON string
+  createdAt DateTime @default(now())
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+}
+
+model Product {
+  id                String                  @id @default(cuid())
+  name              String
+  type              String                  @default("SOFTWARE") // SOFTWARE, ADD_ON, SERVICE, OTHER
+  salesPrice        Int                     @default(0) // in paise
+  costPrice         Int                     @default(0) // in paise
+  notes             String?
+  isActive          Boolean                 @default(true)
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
+  variants          ProductVariant[]
+  taxRules          TaxRuleProduct[]
+  subscriptionLines SubscriptionLine[]
+  templateLines     QuotationTemplateLine[]
+}
+
+model ProductVariant {
+  id                String                  @id @default(cuid())
+  productId         String
+  attribute         String
+  value             String
+  extraPrice        Int                     @default(0) // in paise
+  isActive          Boolean                 @default(true)
+  product           Product                 @relation(fields: [productId], references: [id], onDelete: Cascade)
+  subscriptionLines SubscriptionLine[]
+  templateLines     QuotationTemplateLine[]
+
+  @@unique([productId, attribute, value])
+}
+
+model Plan {
+  id             String              @id @default(cuid())
+  name           String
+  price          Int                 @default(0) // in paise
+  billingPeriod  String              @default("MONTHLY") // DAILY, WEEKLY, MONTHLY, YEARLY
+  minQuantity    Int                 @default(1)
+  availableFrom  DateTime
+  availableTo    DateTime?
+  autoCloseOnEnd Boolean             @default(false)
+  closable       Boolean             @default(true)
+  pausable       Boolean             @default(true)
+  renewable      Boolean             @default(true)
+  isActive       Boolean             @default(true)
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  subscriptions  Subscription[]
+  templates      QuotationTemplate[]
+}
+
+model TaxRule {
+  id           String           @id @default(cuid())
+  name         String
+  percentage   Float            @default(0.0) // 0 - 100 with 2 decimals
+  appliesToAll Boolean          @default(false)
+  isDefault    Boolean          @default(false)
+  isActive     Boolean          @default(true)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  products     TaxRuleProduct[]
+}
+
+model TaxRuleProduct {
+  id        String   @id @default(cuid())
+  taxRuleId String
+  productId String
+  taxRule   TaxRule  @relation(fields: [taxRuleId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([taxRuleId, productId])
+}
+
+model NumberCounter {
+  id        String @id @default(cuid())
+  key       String @unique
+  lastValue Int    @default(0)
+}
+
+model Subscription {
+  id                    String             @id @default(cuid())
+  number                String             @unique
+  customerId            String
+  planId                String
+  status                String             @default("DRAFT") // DRAFT, QUOTATION, CONFIRMED, ACTIVE, CLOSED
+  startDate             DateTime
+  expiryDate            DateTime
+  paymentTerms          String             @default("NET_15") // IMMEDIATE, NET_15, NET_30
+  isPaused              Boolean            @default(false)
+  pausedAt              DateTime?
+  nextBillingDate       DateTime?
+  quotationValidUntil   DateTime?
+  quotationValidityDays Int?
+  templateId            String?
+  closedAt              DateTime?
+  closeReason           String?            // CUSTOMER_REQUEST, STAFF_CLOSED, EXPIRED, REJECTED, CANCELLED
+  createdById           String
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+  customer              CustomerProfile    @relation(fields: [customerId], references: [id])
+  plan                  Plan               @relation(fields: [planId], references: [id])
+  template              QuotationTemplate? @relation(fields: [templateId], references: [id])
+  lines                 SubscriptionLine[]
+
+  @@index([status])
+  @@index([customerId])
+  @@index([nextBillingDate])
+  @@index([expiryDate])
+  @@index([planId])
+  @@index([templateId])
+}
+
+model SubscriptionLine {
+  id             String          @id @default(cuid())
+  subscriptionId String
+  productId      String?
+  variantId      String?
+  description    String
+  quantity       Int             @default(1)
+  unitPrice      Int             @default(0) // in paise
+  taxRuleId      String?
+  taxPercent     Float           @default(0.0)
+  taxAmount      Int             @default(0) // in paise
+  amount         Int             @default(0) // in paise
+  isPlanFee      Boolean         @default(false)
+  subscription   Subscription    @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  product        Product?        @relation(fields: [productId], references: [id])
+  variant        ProductVariant? @relation(fields: [variantId], references: [id])
+}
+
+model QuotationTemplate {
+  id            String                  @id @default(cuid())
+  name          String
+  description   String?
+  planId        String
+  validityDays  Int                     @default(30)
+  isActive      Boolean                 @default(true)
+  createdById   String
+  createdAt     DateTime                @default(now())
+  updatedAt     DateTime                @updatedAt
+  plan          Plan                    @relation(fields: [planId], references: [id])
+  lines         QuotationTemplateLine[]
+  subscriptions Subscription[]
+}
+
+model QuotationTemplateLine {
+  id         String          @id @default(cuid())
+  templateId String
+  productId  String
+  variantId  String?
+  quantity   Int             @default(1)
+  sortOrder  Int             @default(0)
+  template   QuotationTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  product    Product           @relation(fields: [productId], references: [id])
+  variant    ProductVariant?   @relation(fields: [variantId], references: [id])
+}
+
