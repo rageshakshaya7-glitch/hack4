@@ -33,4 +33,4 @@ dev.db
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts
-
+.env
