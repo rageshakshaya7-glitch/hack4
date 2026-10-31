@@ -68,7 +68,7 @@ export function resetRateLimit(key: string): void {
 if (typeof setInterval !== "undefined") {
   setInterval(() => {
     const now = Date.now();
-    for (const [key, record] of memoryStore.entries()) {
+    for (const [key, record] of [...memoryStore.entries()]) {
       if (now > record.resetAt) {
         memoryStore.delete(key);
       }
