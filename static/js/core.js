@@ -49,6 +49,9 @@ function modal(title, body, opts = {}) {
   return { el: mb, close };
 }
 
+const EYE_SVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+const EYE_OFF_SVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
+
 /* ---------- forms: fields = [{k,l,t,o,req,n,d,ph,step}] ---------- */
 function fieldHtml(f, v) {
   const id = 'f_' + f.k; v = v ?? f.d ?? '';
@@ -56,8 +59,10 @@ function fieldHtml(f, v) {
   let input;
   if (f.t === 'select') input = `<select id="${id}">${f.o.map(([val, lab]) => `<option value="${esc(val)}" ${String(val) === String(v) ? 'selected' : ''}>${esc(lab)}</option>`).join('')}</select>`;
   else if (f.t === 'textarea') input = `<textarea id="${id}" rows="3">${esc(v)}</textarea>`;
-  else input = `<input id="${id}" type="${f.t || 'text'}" value="${esc(v)}" ${f.step ? `step="${f.step}"` : ''} ${f.ph ? `placeholder="${esc(f.ph)}"` : ''} ${f.req ? 'required' : ''} ${f.t === 'password' ? 'autocomplete="new-password"' : ''}>`;
-  return `<label class="fld"><span>${esc(f.l)}${f.req ? ' *' : ''}</span>${input}${f.hint ? `<small class="hint">${esc(f.hint)}</small>` : ''}</label>`;
+  else if (f.t === 'password') {
+    input = `<div class="pw-wrap"><input id="${id}" data-pw="1" type="password" value="${esc(v)}" ${f.ph ? `placeholder="${esc(f.ph)}"` : ''} ${f.req ? 'required' : ''} autocomplete="new-password"><button type="button" class="pw-toggle" aria-label="Show password" title="Show password">${EYE_SVG}</button></div><label class="pw-opt"><input type="checkbox" class="pw-opt-chk"> Show password</label>`;
+  } else input = `<input id="${id}" type="${f.t || 'text'}" value="${esc(v)}" ${f.step ? `step="${f.step}"` : ''} ${f.ph ? `placeholder="${esc(f.ph)}"` : ''} ${f.req ? 'required' : ''}>`;
+  return `<div class="fld"><label for="${id}"><span>${esc(f.l)}${f.req ? ' *' : ''}</span></label>${input}${f.hint ? `<small class="hint">${esc(f.hint)}</small>` : ''}</div>`;
 }
 function readForm(root, fields) {
   const out = {};
@@ -71,6 +76,35 @@ function readForm(root, fields) {
   }
   return out;
 }
+function togglePwVisibility(target, forceShow) {
+  const fld = target.closest('.fld') || target.closest('form') || document;
+  const input = $('input[data-pw]', fld);
+  if (!input) return;
+  const show = forceShow !== undefined ? forceShow : input.type === 'password';
+  input.type = show ? 'text' : 'password';
+  const btn = $('.pw-toggle', fld);
+  if (btn) {
+    btn.innerHTML = show ? EYE_OFF_SVG : EYE_SVG;
+    btn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+    btn.setAttribute('title', show ? 'Hide password' : 'Show password');
+  }
+  const chk = $('.pw-opt-chk', fld);
+  if (chk && chk.checked !== show) chk.checked = show;
+}
+
+document.addEventListener('click', e => {
+  const btn = e.target.closest('.pw-toggle');
+  if (btn) {
+    e.preventDefault();
+    togglePwVisibility(btn);
+  }
+});
+
+document.addEventListener('change', e => {
+  if (e.target.matches('.pw-opt-chk')) {
+    togglePwVisibility(e.target, e.target.checked);
+  }
+});
 function formModal({ title, fields, initial = {}, submit = 'Save', onSubmit, wide }) {
   const m = modal(title, `<form>${fields.map(f => fieldHtml(f, initial[f.k])).join('')}<div class="err" hidden></div>
     <div class="actions"><button type="button" class="btn ghost" data-close>Cancel</button><button class="btn primary">${esc(submit)}</button></div></form>`, { wide });
