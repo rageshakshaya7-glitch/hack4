@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Brightloop Subscriptions</title>
+<style>
+:root{--bg:#f5f6fa;--card:#fff;--ink:#1a1d29;--mut:#6b7185;--line:#e4e7ef;--brand:#4f46e5;--brand2:#eef0ff;
+--ok:#0f9d58;--warn:#d98e04;--bad:#d93025;--r:10px}
+*{box-sizing:border-box}body{margin:0;font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--ink)}
+a{color:var(--brand);text-decoration:none;cursor:pointer}a:hover{text-decoration:underline}
+h1{font-size:22px;margin:0 0 4px}h2{font-size:16px;margin:18px 0 8px}h3{margin:0}
+.shell{display:flex;min-height:100vh}.side{width:220px;background:#12142a;color:#cfd3ea;padding:18px 12px;position:sticky;top:0;height:100vh;overflow:auto;flex:none}
+.side .logo{font-weight:700;color:#fff;font-size:17px;padding:0 8px 14px}.side a{display:block;color:#cfd3ea;padding:8px 10px;border-radius:8px;margin:2px 0}
+.side a:hover{background:#1e2142;text-decoration:none}.side a.on{background:var(--brand);color:#fff}
+.side .who{margin-top:18px;padding:10px;font-size:12px;border-top:1px solid #2a2e55;color:#9aa0c8;word-break:break-all}
+main{flex:1;padding:24px 28px;min-width:0}.top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.sub{color:var(--mut)}.btn{border:1px solid var(--line);background:#fff;border-radius:8px;padding:7px 13px;font:inherit;cursor:pointer;color:var(--ink)}
+.btn:hover{background:#f0f2f8}.btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}.btn.primary:hover{background:#4339d4}
+.btn.danger{color:var(--bad);border-color:#f2c4c0}.btn.ghost{background:transparent}.btn.sm{padding:3px 9px;font-size:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));margin-bottom:14px}
+.stat .n{font-size:24px;font-weight:700}.stat .l{color:var(--mut);font-size:12px;text-transform:uppercase;letter-spacing:.04em}.stat.bad .n{color:var(--bad)}
+.tw{overflow:auto;background:#fff;border:1px solid var(--line);border-radius:var(--r)}table{border-collapse:collapse;width:100%}
+th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}th{background:#fafbfe;color:var(--mut);font-size:12px;text-transform:uppercase;letter-spacing:.03em}
+tr:last-child td{border-bottom:0}.r{text-align:right}.empty{padding:28px;text-align:center;color:var(--mut);background:#fff;border:1px dashed var(--line);border-radius:var(--r)}
+.badge{display:inline-block;padding:2px 9px;border-radius:99px;font-size:12px;font-weight:600;background:#eceff5;color:#51586f}
+.badge.active,.badge.paid,.badge.live,.badge.open{background:#e3f6ec;color:var(--ok)}.badge.confirmed,.badge.quotation{background:#e8eefe;color:#3057d5}
+.badge.paused,.badge.scheduled{background:#fff3d6;color:var(--warn)}.badge.cancelled,.badge.closed,.badge.expired,.badge.exhausted,.badge.inactive{background:#f1f1f1;color:#777}
+.badge.overdue{background:#fde8e6;color:var(--bad)}
+.filters{display:flex;gap:8px;flex-wrap:wrap;align-items:end;margin-bottom:12px}.filters label{display:flex;flex-direction:column;font-size:12px;color:var(--mut);gap:3px}
+input,select,textarea{font:inherit;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);min-width:0}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--brand2);border-color:var(--brand)}
+.pager{display:flex;gap:10px;align-items:center;justify-content:flex-end;margin-top:10px;color:var(--mut)}
+.overlay{position:fixed;inset:0;background:rgba(15,18,40,.45);display:flex;align-items:flex-start;justify-content:center;padding:40px 14px;overflow:auto;z-index:50}
+.modal{background:#fff;border-radius:14px;width:100%;max-width:480px;box-shadow:0 20px 60px rgba(0,0,0,.25)}.modal.wide{max-width:860px}
+.mhead{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--line)}.mbody{padding:16px 18px}
+.icon{border:0;background:transparent;font-size:22px;cursor:pointer;color:var(--mut)}
+.fld{display:flex;flex-direction:column;gap:4px;margin-bottom:11px}.fld span{font-size:12px;color:var(--mut)}.chk{display:flex;gap:8px;align-items:center;margin:8px 0}
+.actions{display:flex;gap:8px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap}.err{background:#fde8e6;color:var(--bad);padding:8px 10px;border-radius:8px;margin-top:6px}
+.authwrap{min-height:100vh;display:grid;place-items:center;padding:20px}.auth{width:100%;max-width:400px}.auth h1{margin-bottom:12px}
+.hint{color:var(--mut);font-size:12px;margin:-6px 0 10px}.toast{position:fixed;bottom:20px;right:20px;background:#12142a;color:#fff;padding:10px 16px;border-radius:10px;z-index:99}
+.toast.bad{background:var(--bad)}.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}.kv{display:grid;grid-template-columns:140px 1fr;gap:6px 12px;margin:8px 0}.kv b{color:var(--mut);font-weight:500}
+.lrow{display:grid;grid-template-columns:2fr 1.4fr 70px 28px;gap:6px;margin-bottom:6px}.steps{display:flex;gap:6px;margin:10px 0;flex-wrap:wrap}
+.step{padding:4px 12px;border-radius:99px;background:#eceff5;color:var(--mut);font-size:12px}.step.done{background:#e3f6ec;color:var(--ok)}.step.now{background:var(--brand);color:#fff}
+.bar{display:flex;align-items:center;gap:8px;margin:5px 0}.bar i{display:block;height:14px;background:var(--brand);border-radius:4px;min-width:2px}.bar span{width:70px;color:var(--mut);font-size:12px}
+.tabs{display:flex;gap:4px;margin-bottom:12px;border-bottom:1px solid var(--line)}.tabs a{padding:8px 14px;color:var(--mut);border-bottom:2px solid transparent}.tabs a.on{color:var(--brand);border-color:var(--brand);text-decoration:none}
+@media(max-width:800px){.side{display:none}main{padding:16px}.two{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script src="/static/js/core.js"></script>
+<script src="/static/js/auth.js"></script>
+<script src="/static/js/dashboard.js"></script>
+<script src="/static/js/catalog.js"></script>
+<script src="/static/js/customers.js"></script>
+<script src="/static/js/subscriptions.js"></script>
+<script src="/static/js/invoices.js"></script>
+<script src="/static/js/payments.js"></script>
+<script src="/static/js/reports.js"></script>
+<script>boot();</script>
+</body>
+</html>
